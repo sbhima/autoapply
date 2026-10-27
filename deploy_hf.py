@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create the Hugging Face Docker Space and push this repo using ~/.cache/huggingface/token or a hidden prompt."""
+"""Create the Hugging Face Docker Space and push this repo using a one-time hidden prompt (never saved to disk)."""
 from __future__ import annotations
 
 import getpass
@@ -11,23 +11,10 @@ import urllib.request
 from pathlib import Path
 
 SPACE_NAME = os.environ.get("HF_SPACE_NAME", "autoapply")
-TOKEN_PATH = Path.home() / ".cache" / "huggingface" / "token"
 
 
 def get_token() -> str:
-    env_tok = os.environ.get("HF_TOKEN", "").strip()
-    if env_tok:
-        return env_tok
-    if TOKEN_PATH.exists():
-        tok = TOKEN_PATH.read_text().strip()
-        if tok:
-            return tok
-    tok = getpass.getpass("Paste your Hugging Face Write Token (input is hidden): ").strip()
-    if tok:
-        TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
-        TOKEN_PATH.write_text(tok)
-        TOKEN_PATH.chmod(0o600)
-    return tok
+    return getpass.getpass("Paste your Hugging Face Write Token (hidden, not saved to disk): ").strip()
 
 
 def main() -> int:
