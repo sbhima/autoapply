@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>AutoApply</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-alt: #263449;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 84px;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: var(--card-alt);
+      color: var(--muted);
+    }
+    .badge.ok { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+    .badge.warn { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
+    .badge.err { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+    .badge.info { background: rgba(59, 130, 246, 0.18); color: #60a5fa; }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    h2, h3 { margin: 0 0 10px 0; font-size: 1rem; }
+    p.sub { margin: 0 0 12px 0; font-size: 0.85rem; color: var(--muted); }
+
+    label.lbl {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="number"], select, textarea {
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.92rem;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+    textarea { resize: vertical; min-height: 76px; font-family: inherit; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    @media (max-width: 640px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    button, .btn {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+    .btn-green { background: var(--green); color: #052e16; }
+    .btn-red { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); }
+    .btn-ghost { background: var(--card-alt); color: var(--text); border-color: var(--border); }
+    .btn-sm { padding: 6px 10px; font-size: 0.8rem; }
+    .btn-block { width: 100%; }
+
+    .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .between { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+    /* Bottom navigation bar (mobile-friendly) */
+    nav.bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 40;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    }
+    nav.bottom-nav button {
+      background: transparent;
+      color: var(--muted);
+      flex: 1;
+      flex-direction: column;
+      gap: 3px;
+      padding: 6px 4px;
+      font-size: 0.74rem;
+      border-radius: 8px;
+    }
+    nav.bottom-nav button.active { color: var(--primary); background: rgba(59, 130, 246, 0.1); }
+
+    /* Field review cards */
+    .field-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .field-item.needs-attn { border-color: var(--yellow); }
+    .field-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .field-title { font-weight: 600; font-size: 0.9rem; line-height: 1.3; }
+    .req-star { color: var(--red); margin-left: 3px; }
+    .screenshot-box {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: #000;
+      margin-top: 8px;
+    }
+    .screenshot-box img { width: 100%; display: block; height: auto; }
+    .sticky-actions {
+      position: sticky;
+      bottom: 66px;
+      z-index: 25;
+      background: rgba(30, 41, 59, 0.96);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .hidden { display: none !important; }
+    .toast {
+      position: fixed;
+      top: 64px;
+      right: 16px;
+      z-index: 60;
+      background: #1e293b;
+      border: 1px solid var(--primary);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span>AutoApply</span>
+      <span id="hdrResumeBadge" class="badge">No Resume</span>
+    </div>
+    <div class="row">
+      <button class="btn-ghost btn-sm" onclick="openUserModal()">
+        User: <strong id="hdrUser">default</strong>
+      </button>
+    </div>
+  </header>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <main class="container">
+    <!-- ==================== TAB 1: APPLY ==================== -->
+    <section id="tab-apply">
+      <div class="card">
+        <h2>Apply to Jobs</h2>
+        <p class="sub">Paste one or more job links (Greenhouse, Ashby, Lever, Workday, SmartRecruiters, iCIMS, etc.).</p>
+        <textarea id="jobUrls" placeholder="https://boards.greenhouse.io/...&#10;https://jobs.ashbyhq.com/..."></textarea>
+        <div class="between" style="margin-top: 10px;">
+          <label class="row" style="font-size: 0.85rem; cursor: pointer;">
+            <input type="checkbox" id="chkAutoAdvance" checked />
+            Auto-advance multi-page steps when required fields are OK
+          </label>
+          <button id="btnStartSession" class="btn-primary" onclick="startSession()">Start Application</button>
+        </div>
+      </div>
+
+      <!-- Active Session Panel -->
+      <div id="sessionPanel" class="card hidden">
+        <div class="between">
+          <div>
+            <span id="sessStatusBadge" class="badge info">working</span>
+            <span id="sessAtsBadge" class="badge">ats</span>
+            <span id="sessStepBadge" class="badge">Step 1</span>
+          </div>
+          <div class="badge" id="sessTokenBadge">Tokens: 0 / 60000</div>
+        </div>
+        <h3 id="sessJobTitle" style="margin-top: 8px;">Loading job...</h3>
+        <p class="sub" id="sessDetail" style="margin-bottom: 8px;"></p>
+
+        <div id="sessErrors" class="hidden" style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 0.82rem; color: #fca5a5;"></div>
+
+        <!-- Collapsible Live Screenshot for Phone & Remote View -->
+        <details id="screenshotDetails" style="margin-bottom: 12px;">
+          <summary style="cursor: pointer; font-size: 0.85rem; color: var(--muted); font-weight: 600;">
+            Live Browser View (tap to expand / refresh)
+          </summary>
+          <div class="screenshot-box">
+            <img id="sessScreenshot" alt="Live Browser Page" onclick="refreshScreenshot()" />
+          </div>
+        </details>
+
+        <!-- Filter pills -->
+        <div class=" between" style="margin-bottom: 10px;">
+          <div class="row">
+            <button class="btn-ghost btn-sm" id="fltAll" onclick="setFilter('all')">All</button>
+            <button class="btn-ghost btn-sm" id="fltAttn" onclick="setFilter('attn')">Needs Attention</button>
+            <button class="btn-ghost btn-sm" id="fltReq" onclick="setFilter('req')">Required</button>
+          </div>
+          <button class="btn-ghost btn-sm" onclick="sessionAction('rescan')">Rescan DOM</button>
+        </div>
+
+        <div id="fieldsContainer"></div>
+
+        <div class="sticky-actions">
+          <button id="btnNextStep" class="btn-primary hidden" style="flex: 2;" onclick="sessionAction('next')">Next Step</button>
+          <button id="btnSubmitApp" class="btn-green hidden" style="flex: 2;" onclick="confirmSubmit()">Submit Application</button>
+          <button class="btn-ghost" onclick="sessionAction('skip')">Skip Job</button>
+          <button class="btn-red" onclick="sessionAction('stop')">Stop</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: PROFILE & RESUME ==================== -->
+    <section id="tab-profile" class="hidden">
+      <div class="card">
+        <div class="between">
+          <div>
+            <h2>Resume Upload</h2>
+            <p class="sub" id="resumeStatusText">Upload your PDF, DOCX, or TXT resume to auto-populate your profile.</p>
+          </div>
+          <label class="btn btn-primary" style="cursor: pointer;">
+            Upload Resume
+            <input type="file" id="resumeInput" accept=".pdf,.docx,.txt" style="display: none;" onchange="uploadResume(this)" />
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Personal & Contact</h2>
+        <div class="grid-2">
+          <div><label class="lbl">First Name *</label><input type="text" id="p_first_name" /></div>
+          <div><label class="lbl">Last Name *</label><input type="text" id="p_last_name" /></div>
+          <div><label class="lbl">Preferred Name</label><input type="text" id="p_preferred_name" /></div>
+          <div><label class="lbl">Pronouns</label><input type="text" id="p_pronouns" placeholder="e.g. he/him, she/her, they/them" /></div>
+          <div><label class="lbl">Email *</label><input type="email" id="p_email" /></div>
+          <div><label class="lbl">Phone *</label><input type="tel" id="p_phone" /></div>
+          <div><label class="lbl">Location (City, ST)</label><input type="text" id="p_location" placeholder="College Park, MD" /></div>
+          <div><label class="lbl">Street Address</label><input type="text" id="p_street" /></div>
+          <div><label class="lbl">City</label><input type="text" id="p_city" /></div>
+          <div><label class="lbl">State</label><input type="text" id="p_state" /></div>
+          <div><label class="lbl">ZIP / Postal Code</label><input type="text" id="p_zip" /></div>
+          <div><label class="lbl">Country</label><input type="text" id="p_country" value="United States" /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Links</h2>
+        <div class="grid-2">
+          <div><label class="lbl">LinkedIn URL</label><input type="text" id="p_linkedin" /></div>
+          <div><label class="lbl">GitHub URL</label><input type="text" id="p_github" /></div>
+          <div><label class="lbl">Portfolio / Website</label><input type="text" id="p_portfolio" /></div>
+          <div><label class="lbl">Other URL</label><input type="text" id="p_other_link" /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Education (Primary)</h2>
+        <div class="grid-2">
+          <div><label class="lbl">School / University</label><input type="text" id="p_edu_school" /></div>
+          <div><label class="lbl">Degree</label><input type="text" id="p_edu_degree" placeholder="Bachelor of Science" /></div>
+          <div><label class="lbl">Major / Field of Study</label><input type="text" id="p_edu_major" /></div>
+          <div><label class="lbl">GPA</label><input type="text" id="p_edu_gpa" /></div>
+          <div><label class="lbl">Start (YYYY-MM)</label><input type="text" id="p_edu_start" placeholder="2023-08" /></div>
+          <div><label class="lbl">Graduation / End (YYYY-MM)</label><input type="text" id="p_edu_end" placeholder="2027-05" /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Most Recent Experience</h2>
+        <div class="grid-2">
+          <div><label class="lbl">Company</label><input type="text" id="p_job_company" /></div>
+          <div><label class="lbl">Job Title</label><input type="text" id="p_job_title" /></div>
+          <div><label class="lbl">Start (YYYY-MM)</label><input type="text" id="p_job_start" /></div>
+          <div><label class="lbl">End (YYYY-MM or present)</label><input type="text" id="p_job_end" /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Work Authorization & Preferences</h2>
+        <div class="grid-2">
+          <div>
+            <label class="lbl">Legally Authorized to Work in US?</label>
+            <select id="p_auth_us"><option value="true">Yes</option><option value="false">No</option></select>
+          </div>
+          <div>
+            <label class="lbl">Require Visa Sponsorship (Now or Future)?</label>
+            <select id="p_sponsorship"><option value="false">No</option><option value="true">Yes</option></select>
+          </div>
+          <div><label class="lbl">Citizenship / Visa Status</label><input type="text" id="p_citizenship" placeholder="US Citizen" /></div>
+          <div><label class="lbl">Years of Full-Time Experience</label><input type="text" id="p_yoe" placeholder="0" /></div>
+          <div><label class="lbl">Earliest Start Date</label><input type="text" id="p_start_date" placeholder="Immediately or YYYY-MM-DD" /></div>
+          <div><label class="lbl">Salary Expectation</label><input type="text" id="p_salary" placeholder="Open / negotiable" /></div>
+          <div>
+            <label class="lbl">Willing to Relocate?</label>
+            <select id="p_relocate"><option value="true">Yes</option><option value="false">No</option></select>
+          </div>
+          <div><label class="lbl">How Did You Hear About Us?</label><input type="text" id="p_hear" placeholder="Company website" /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>EEO / Voluntary Self-Identification</h2>
+        <p class="sub">Use "decline" to automatically select "Decline to self-identify / Prefer not to say".</p>
+        <div class="grid-3">
+          <div><label class="lbl">Gender</label><input type="text" id="p_eeo_gender" placeholder="decline" /></div>
+          <div><label class="lbl">Race / Ethnicity</label><input type="text" id="p_eeo_race" placeholder="decline" /></div>
+          <div><label class="lbl">Hispanic / Latino</label><input type="text" id="p_eeo_hispanic" placeholder="decline" /></div>
+          <div><label class="lbl">Veteran Status</label><input type="text" id="p_eeo_veteran" placeholder="decline" /></div>
+          <div><label class="lbl">Disability Status</label><input type="text" id="p_eeo_disability" placeholder="decline" /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>ATS Portal Account (Optional, for Workday / iCIMS Sign-In Gates)</h2>
+        <div class="grid-2">
+          <div><label class="lbl">Account Email</label><input type="email" id="p_acc_email" /></div>
+          <div><label class="lbl">Account Password</label><input type="password" id="p_acc_password" /></div>
+        </div>
+      </div>
+
+      <button class="btn-primary btn-block" onclick="saveProfile()">Save Profile</button>
+    </section>
+
+    <!-- ==================== TAB 3: API KEY & TOKEN LIMITS ==================== -->
+    <section id="tab-settings" class="hidden">
+      <div class="card">
+        <h2>LLM Provider & Token Limits (Bring Your Own Key)</h2>
+        <p class="sub">
+          Your API key is stored in your browser and used only for your sessions. Leave on "Server Default / Rule-Only" to run 100% free without a key.
+        </p>
+        <div class="grid-2">
+          <div>
+            <label class="lbl">Provider</label>
+            <select id="s_provider">
+              <option value="">Server Env Default (or Rule-Only)</option>
+              <option value="none">Rule-Only Mode (No LLM / 0 Tokens)</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic Claude</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">API Key</label>
+            <input type="password" id="s_api_key" placeholder="AIza... / sk-..." />
+          </div>
+          <div>
+            <label class="lbl">Model Override (Optional)</label>
+            <input type="text" id="s_model" placeholder="gemini-2.5-flash / gpt-4.1-mini" />
+          </div>
+          <div>
+            <label class="lbl">Session Token Budget</label>
+            <input type="number" id="s_token_budget" value="60000" />
+          </div>
+          <div>
+            <label class="lbl">Max Input Tokens per Request</label>
+            <input type="number" id="s_max_input" value="6000" />
+          </div>
+        </div>
+        <button class="btn-primary" style="margin-top: 12px;" onclick="saveSettings()">Save LLM Settings</button>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: HISTORY & MEMORY ==================== -->
+    <section id="tab-history" class="hidden">
+      <div class="card">
+        <h2>Recent Applications</h2>
+        <div id="historyList"></div>
+      </div>
+      <div class="card">
+        <div class="between">
+          <h2>Saved Answer Memory</h2>
+          <button class="btn-red btn-sm" onclick="clearMemory()">Clear All</button>
+        </div>
+        <p class="sub">Answers you edit during review are remembered here so repeat questions are filled automatically.</p>
+        <div id="memoryList"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button id="nav-apply" class="active" onclick="switchTab('apply')">
+      <span>Apply</span>
+    </button>
+    <button id="nav-profile" onclick="switchTab('profile')">
+      <span>Profile & Resume</span>
+    </button>
+    <button id="nav-settings" onclick="switchTab('settings')">
+      <span>API & Tokens</span>
+    </button>
+    <button id="nav-history" onclick="switchTab('history')">
+      <span>History</span>
+    </button>
+  </nav>
+
+  <script>
+    let currentUser = localStorage.getItem('aa_user') || 'default';
+    let currentPass = localStorage.getItem('aa_pass') || '';
+    let activeSessionId = '';
+    let pollTimer = null;
+    let currentSession = null;
+    let fieldFilter = 'all';
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 3200);
+    }
+
+    function getLlmSettings() {
+      try {
+        return JSON.parse(localStorage.getItem('aa_llm') || '{}');
+      } catch (e) { return {}; }
+    }
+
+    function loadSettingsForm() {
+      const s = getLlmSettings();
+      document.getElementById('s_provider').value = s.provider || '';
+      document.getElementById('s_api_key').value = s.api_key || '';
+      document.getElementById('s_model').value = s.model || '';
+      document.getElementById('s_token_budget').value = s.token_budget || 60000;
+      document.getElementById('s_max_input').value = s.max_input_tokens || 6000;
+    }
+
+    function saveSettings() {
+      const cfg = {
+        provider: document.getElementById('s_provider').value,
+        api_key: document.getElementById('s_api_key').value.trim(),
+        model: document.getElementById('s_model').value.trim(),
+        token_budget: Number(document.getElementById('s_token_budget').value) || 60000,
+        max_input_tokens: Number(document.getElementById('s_max_input').value) || 6000,
+      };
+      localStorage.setItem('aa_llm', JSON.stringify(cfg));
+      showToast('LLM & Token settings saved!');
+    }
+
+    async function api(path, method = 'GET', body = null) {
+      const opts = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': currentUser,
+          'X-Passcode': currentPass,
+        }
+      };
+      if (body !== null) opts.body = JSON.stringify(body);
+      const res = await fetch(path, opts);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function switchTab(name) {
+      for (const t of ['apply', 'profile', 'settings', 'history']) {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== name);
+        document.getElementById(`nav-${t}`).classList.toggle('active', t === name);
+      }
+      if (name === 'history') loadMe();
+    }
+
+    function openUserModal() {
+      const u = prompt('Enter your username (friends can pick their own username to keep their resume & profile separate):', currentUser);
+      if (!u) return;
+      const p = prompt('Optional passcode for this username (leave blank if none):', currentPass);
+      currentUser = u.trim().toLowerCase() || 'default';
+      currentPass = p || '';
+      localStorage.setItem('aa_user', currentUser);
+      localStorage.setItem('aa_pass', currentPass);
+      document.getElementById('hdrUser').textContent = currentUser;
+      loadMe();
+    }
+
+    async function loadMe() {
+      document.getElementById('hdrUser').textContent = currentUser;
+      try {
+        const d = await api('/api/me');
+        const rb = document.getElementById('hdrResumeBadge');
+        if (d.has_resume) {
+          rb.textContent = d.resume_filename;
+          rb.className = 'badge ok';
+          document.getElementById('resumeStatusText').textContent = `Active resume: ${d.resume_filename}`;
+        } else {
+          rb.textContent = 'No Resume';
+          rb.className = 'badge warn';
+        }
+        populateProfileForm(d.profile || {});
+        renderHistory(d.history || []);
+        renderMemory(d.memory || {});
+        if (d.active_session_id && !activeSessionId) {
+          activeSessionId = d.active_session_id;
+          startPolling();
+        }
+      } catch (e) {
+        showToast(e.message);
+      }
+    }
+
+    function populateProfileForm(p) {
+      const per = p.personal || {};
+      const addr = per.address || {};
+      const lnk = p.links || {};
+      const edu = (p.education && p.education[0]) || {};
+      const job = (p.experience && p.experience[0]) || {};
+      const wa = p.work_authorization || {};
+      const pref = p.preferences || {};
+      const eeo = p.eeo || {};
+      const misc = p.misc || {};
+      const acc = p.accounts || {};
+
+      document.getElementById('p_first_name').value = per.first_name || '';
+      document.getElementById('p_last_name').value = per.last_name || '';
+      document.getElementById('p_preferred_name').value = per.preferred_name || '';
+      document.getElementById('p_pronouns').value = per.pronouns || '';
+      document.getElementById('p_email').value = per.email || '';
+      document.getElementById('p_phone').value = per.phone || '';
+      document.getElementById('p_location').value = per.location || '';
+      document.getElementById('p_street').value = addr.street || '';
+      document.getElementById('p_city').value = addr.city || '';
+      document.getElementById('p_state').value = addr.state || '';
+      document.getElementById('p_zip').value = addr.zip || '';
+      document.getElementById('p_country').value = addr.country || 'United States';
+
+      document.getElementById('p_linkedin').value = lnk.linkedin || '';
+      document.getElementById('p_github').value = lnk.github || '';
+      document.getElementById('p_portfolio').value = lnk.portfolio || '';
+      document.getElementById('p_other_link').value = lnk.other || '';
+
+      document.getElementById('p_edu_school').value = edu.school || '';
+      document.getElementById('p_edu_degree').value = edu.degree || '';
+      document.getElementById('p_edu_major').value = edu.major || '';
+      document.getElementById('p_edu_gpa').value = edu.gpa || '';
+      document.getElementById('p_edu_start').value = edu.start || '';
+      document.getElementById('p_edu_end').value = edu.end || '';
+
+      document.getElementById('p_job_company').value = job.company || '';
+      document.getElementById('p_job_title').value = job.title || '';
+      document.getElementById('p_job_start').value = job.start || '';
+      document.getElementById('p_job_end').value = job.end || '';
+
+      document.getElementById('p_auth_us').value = String(wa.authorized_us !== false);
+      document.getElementById('p_sponsorship').value = String(!!wa.require_sponsorship);
+      document.getElementById('p_citizenship').value = wa.citizenship || '';
+      document.getElementById('p_yoe').value = pref.years_experience || '';
+      document.getElementById('p_start_date').value = pref.start_date || '';
+      document.getElementById('p_salary').value = pref.salary_expectation || '';
+      document.getElementById('p_relocate').value = String(pref.willing_to_relocate !== false);
+      document.getElementById('p_hear').value = misc.how_did_you_hear || 'Company website';
+
+      document.getElementById('p_eeo_gender').value = eeo.gender || 'decline';
+      document.getElementById('p_eeo_race').value = eeo.race || 'decline';
+      document.getElementById('p_eeo_hispanic').value = eeo.hispanic_latino || 'decline';
+      document.getElementById('p_eeo_veteran').value = eeo.veteran || 'decline';
+      document.getElementById('p_eeo_disability').value = eeo.disability || 'decline';
+
+      document.getElementById('p_acc_email').value = acc.email || '';
+      document.getElementById('p_acc_password').value = acc.password || '';
+    }
+
+    async function saveProfile() {
+      const profile = {
+        personal: {
+          first_name: document.getElementById('p_first_name').value.trim(),
+          last_name: document.getElementById('p_last_name').value.trim(),
+          preferred_name: document.getElementById('p_preferred_name').value.trim(),
+          pronouns: document.getElementById('p_pronouns').value.trim(),
+          email: document.getElementById('p_email').value.trim(),
+          phone: document.getElementById('p_phone').value.trim(),
+          location: document.getElementById('p_location').value.trim(),
+          address: {
+            street: document.getElementById('p_street').value.trim(),
+            city: document.getElementById('p_city').value.trim(),
+            state: document.getElementById('p_state').value.trim(),
+            zip: document.getElementById('p_zip').value.trim(),
+            country: document.getElementById('p_country').value.trim(),
+          }
+        },
+        links: {
+          linkedin: document.getElementById('p_linkedin').value.trim(),
+          github: document.getElementById('p_github').value.trim(),
+          portfolio: document.getElementById('p_portfolio').value.trim(),
+          other: document.getElementById('p_other_link').value.trim(),
+        },
+        education: [{
+          school: document.getElementById('p_edu_school').value.trim(),
+          degree: document.getElementById('p_edu_degree').value.trim(),
+          major: document.getElementById('p_edu_major').value.trim(),
+          gpa: document.getElementById('p_edu_gpa').value.trim(),
+          start: document.getElementById('p_edu_start').value.trim(),
+          end: document.getElementById('p_edu_end').value.trim(),
+        }],
+        experience: [{
+          company: document.getElementById('p_job_company').value.trim(),
+          title: document.getElementById('p_job_title').value.trim(),
+          start: document.getElementById('p_job_start').value.trim(),
+          end: document.getElementById('p_job_end').value.trim(),
+        }],
+        work_authorization: {
+          authorized_us: document.getElementById('p_auth_us').value === 'true',
+          require_sponsorship: document.getElementById('p_sponsorship').value === 'true',
+          citizenship: document.getElementById('p_citizenship').value.trim(),
+        },
+        preferences: {
+          years_experience: document.getElementById('p_yoe').value.trim(),
+          start_date: document.getElementById('p_start_date').value.trim(),
+          salary_expectation: document.getElementById('p_salary').value.trim(),
+          willing_to_relocate: document.getElementById('p_relocate').value === 'true',
+        },
+        eeo: {
+          gender: document.getElementById('p_eeo_gender').value.trim() || 'decline',
+          race: document.getElementById('p_eeo_race').value.trim() || 'decline',
+          hispanic_latino: document.getElementById('p_eeo_hispanic').value.trim() || 'decline',
+          veteran: document.getElementById('p_eeo_veteran').value.trim() || 'decline',
+          disability: document.getElementById('p_eeo_disability').value.trim() || 'decline',
+        },
+        misc: {
+          how_did_you_hear: document.getElementById('p_hear').value.trim() || 'Company website',
+        },
+        accounts: {
+          email: document.getElementById('p_acc_email').value.trim(),
+          password: document.getElementById('p_acc_password').value,
+        }
+      };
+      try {
+        await api('/api/profile', 'POST', { profile });
+        showToast('Profile saved!');
+      } catch (e) {
+        showToast(e.message);
+      }
+    }
+
+    async function uploadResume(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      showToast('Uploading & parsing resume...');
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const b64 = reader.result.split(',')[1];
+        try {
+          const res = await api('/api/resume', 'POST', {
+            filename: file.name,
+            content_base64: b64,
+            llm: getLlmSettings(),
+          });
+          populateProfileForm(res.profile || {});
+          const rb = document.getElementById('hdrResumeBadge');
+          rb.textContent = res.resume_filename;
+          rb.className = 'badge ok';
+          document.getElementById('resumeStatusText').textContent = `Active resume: ${res.resume_filename}`;
+          showToast('Resume parsed & profile updated!');
+        } catch (e) {
+          showToast('Upload failed: ' + e.message);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function startSession() {
+      const urls = document.getElementById('jobUrls').value.trim();
+      if (!urls) { showToast('Paste at least one job URL first.'); return; }
+      const btn = document.getElementById('btnStartSession');
+      btn.disabled = true;
+      try {
+        const sess = await api('/api/session/start', 'POST', {
+          urls,
+          auto_advance: document.getElementById('chkAutoAdvance').checked,
+          llm: getLlmSettings(),
+        });
+        activeSessionId = sess.id;
+        renderSession(sess);
+        startPolling();
+      } catch (e) {
+        showToast(e.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollSession();
+      pollTimer = setInterval(pollSession, 1800);
+    }
+
+    async function pollSession() {
+      if (!activeSessionId) return;
+      try {
+        const sess = await api(`/api/session/${activeSessionId}`);
+        // Only re-render fields list if status/step/field count changed or user isn't actively typing
+        const activeEl = document.activeElement;
+        const isEditingField = activeEl && activeEl.closest && activeEl.closest('#fieldsContainer');
+        renderSession(sess, !isEditingField);
+        if (['completed', 'stopped', 'error'].includes(sess.status)) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+      } catch (e) {
+        clearInterval(pollTimer);
+      }
+    }
+
+    function refreshScreenshot() {
+      if (!activeSessionId) return;
+      document.getElementById('sessScreenshot').src = `/api/session/${activeSessionId}/screenshot?t=${Date.now()}`;
+    }
+
+    function setFilter(f) {
+      fieldFilter = f;
+      if (currentSession) renderFields(currentSession.fields || []);
+    }
+
+    function renderSession(sess, updateFieldsDom = true) {
+      currentSession = sess;
+      document.getElementById('sessionPanel').classList.remove('hidden');
+      const sb = document.getElementById('sessStatusBadge');
+      sb.textContent = sess.status.replace('_', ' ');
+      sb.className = 'badge ' + (sess.status === 'waiting_review' ? 'warn' : (sess.status === 'completed' ? 'ok' : (sess.status === 'error' ? 'err' : 'info')));
+
+      document.getElementById('sessAtsBadge').textContent = sess.ats || 'detecting...';
+      document.getElementById('sessStepBadge').textContent = `${sess.step_name || 'Step'} (${sess.url_index + 1}/${sess.total_urls})`;
+      const llm = sess.llm || {};
+      document.getElementById('sessTokenBadge').textContent = llm.active
+        ? `Tokens: ${llm.tokens_used} / ${llm.token_budget}`
+        : 'Rule-Only (0 tokens)';
+
+      const jobTitle = [sess.job && sess.job.title, sess.job && sess.job.company].filter(Boolean).join(' @ ');
+      document.getElementById('sessJobTitle').textContent = jobTitle || sess.current_url;
+      document.getElementById('sessDetail').textContent = sess.status_detail || '';
+
+      const errBox = document.getElementById('sessErrors');
+      if (sess.errors && sess.errors.length) {
+        errBox.textContent = sess.errors.join(' • ');
+        errBox.classList.remove('hidden');
+      } else {
+        errBox.classList.add('hidden');
+      }
+
+      if (sess.has_screenshot && document.getElementById('screenshotDetails').open) {
+        refreshScreenshot();
+      } else if (sess.has_screenshot && !document.getElementById('sessScreenshot').getAttribute('src')) {
+        refreshScreenshot();
+      }
+
+      const btnNext = document.getElementById('btnNextStep');
+      const btnSub = document.getElementById('btnSubmitApp');
+      btnNext.classList.toggle('hidden', sess.nav_kind !== 'next');
+      btnNext.textContent = sess.nav_text || 'Next Step';
+      btnSub.classList.toggle('hidden', sess.nav_kind !== 'submit');
+      btnSub.textContent = sess.nav_text || 'Submit Application';
+
+      if (updateFieldsDom) {
+        renderFields(sess.fields || []);
+      }
+    }
+
+    function renderFields(fields) {
+      const container = document.getElementById('fieldsContainer');
+      const attnCount = fields.filter(f => f.required && ['missing', 'error', 'mismatch'].includes(f.status)).length;
+      document.getElementById('fltAll').textContent = `All (${fields.length})`;
+      document.getElementById('fltAttn').textContent = `Needs Attention (${attnCount})`;
+      document.getElementById('fltReq').textContent = `Required (${fields.filter(f => f.required).length})`;
+
+      const filtered = fields.filter(f => {
+        if (fieldFilter === 'attn') return ['missing', 'error', 'mismatch'].includes(f.status);
+        if (fieldFilter === 'req') return f.required;
+        return true;
+      });
+
+      if (!filtered.length) {
+        container.innerHTML = `<p class="sub" style="text-align:center; padding: 14px;">No fields in this filter view.</p>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(f => {
+        const needsAttn = f.required && ['missing', 'error', 'mismatch'].includes(f.status);
+        const stClass = f.status === 'ok' ? 'ok' : (['missing', 'error'].includes(f.status) ? 'err' : (f.status === 'mismatch' ? 'warn' : ''));
+        const secPrefix = f.section ? `<span style="color:var(--muted);font-weight:400;">[${esc(f.section)}]</span> ` : '';
+        let controlHtml = '';
+        const curVal = f.display_value || '';
+        if (f.kind === 'file') {
+          controlHtml = `<div style="font-size:0.82rem; color:var(--muted);">Uploaded file: <strong>${esc(curVal || 'Resume')}</strong></div>`;
+        } else if (f.options && f.options.length > 0 && !f.multi) {
+          const opts = ['<option value="">-- Select option --</option>'].concat(
+            f.options.map(o => `<option value="${esc(o)}" ${o === curVal ? 'selected' : ''}>${esc(o)}</option>`)
+          ).join('');
+          controlHtml = `
+            <div class="row">
+              <select id="finput-${f.index}" style="flex:1;" onchange="updateField(${f.index})">${opts}</select>
+            </div>`;
+        } else if (f.kind === 'checkbox') {
+          const checked = curVal.toLowerCase().startsWith('yes') || curVal === 'true';
+          controlHtml = `
+            <label class="row" style="font-size:0.88rem; cursor:pointer;">
+              <input type="checkbox" id="finput-${f.index}" ${checked ? 'checked' : ''} onchange="updateField(${f.index}, this.checked)" />
+              Checked (${esc(curVal || 'No')})
+            </label>`;
+        } else {
+          controlHtml = `
+            <div class="row">
+              <input type="text" id="finput-${f.index}" value="${esc(curVal)}" style="flex:1;" placeholder="Enter answer..." />
+              <button class="btn-ghost btn-sm" onclick="updateField(${f.index})">Fill</button>
+            </div>`;
+        }
+        const errLine = f.error ? `<div style="color:#f87171; font-size:0.78rem; margin-top:4px;">${esc(f.error)}</div>` : '';
+        return `
+          <div class="field-item ${needsAttn ? 'needs-attn' : ''}">
+            <div class="field-head">
+              <div class="field-title">
+                #${f.index + 1} ${secPrefix}${esc(f.label || f.uid)}${f.required ? '<span class="req-star">*</span>' : ''}
+              </div>
+              <div class="row">
+                <span class="badge">${esc(f.source || f.kind)}</span>
+                <span class="badge ${stClass}">${esc(f.status)}</span>
+              </div>
+            </div>
+            ${controlHtml}
+            ${errLine}
+          </div>`;
+      }).join('');
+    }
+
+    async function updateField(index, explicitVal = undefined) {
+      if (!activeSessionId) return;
+      const el = document.getElementById(`finput-${index}`);
+      const val = explicitVal !== undefined ? explicitVal : (el ? el.value : '');
+      showToast(`Filling field #${index + 1}...`);
+      try {
+        const sess = await api(`/api/session/${activeSessionId}/field`, 'POST', { index, value: val });
+        renderSession(sess, true);
+        refreshScreenshot();
+        showToast(`Field #${index + 1} updated & saved to memory!`);
+      } catch (e) {
+        showToast(e.message);
+      }
+    }
+
+    async function sessionAction(action) {
+      if (!activeSessionId) return;
+      try {
+        const sess = await api(`/api/session/${activeSessionId}/action`, 'POST', { action });
+        renderSession(sess, true);
+        setTimeout(refreshScreenshot, 900);
+      } catch (e) {
+        showToast(e.message);
+      }
+    }
+
+    function confirmSubmit() {
+      if (confirm('Submit this job application now?')) {
+        sessionAction('submit');
+      }
+    }
+
+    function renderHistory(items) {
+      const box = document.getElementById('historyList');
+      if (!items.length) {
+        box.innerHTML = '<p class="sub">No applications run yet.</p>';
+        return;
+      }
+      box.innerHTML = items.map(it => `
+        <div class="field-item between">
+          <div>
+            <div style="font-weight:600; font-size:0.9rem;">${esc(it.title || 'Job Application')} ${it.company ? '@ ' + esc(it.company) : ''}</div>
+            <div style="font-size:0.78rem; color:var(--muted);">${esc(it.ats || '')} • ${esc(it.url)}</div>
+          </div>
+          <span class="badge ${it.outcome === 'submitted' ? 'ok' : 'info'}">${esc(it.outcome)}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderMemory(mem) {
+      const box = document.getElementById('memoryList');
+      const keys = Object.keys(mem || {});
+      if (!keys.length) {
+        box.innerHTML = '<p class="sub">No custom answers saved yet.</p>';
+        return;
+      }
+      box.innerHTML = keys.map(k => `
+        <div class="field-item between">
+          <div style="font-size:0.84rem;">
+            <strong>${esc(k)}</strong>: ${esc(JSON.stringify(mem[k]))}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function clearMemory() {
+      if (!confirm('Clear all saved answers in memory?')) return;
+      const res = await api('/api/memory', 'DELETE', {});
+      renderMemory(res.memory || {});
+      showToast('Memory cleared.');
+    }
+
+    function esc(s) {
+      return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    document.getElementById('screenshotDetails').addEventListener('toggle', (e) => {
+      if (e.target.open) refreshScreenshot();
+    });
+
+    loadSettingsForm();
+    loadMe();
+  </script>
+</body>
+</html>
