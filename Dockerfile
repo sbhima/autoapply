@@ -1,6 +1,5 @@
 FROM mcr.microsoft.com/playwright/python:v1.49.0-noble
 
-# Hugging Face Spaces runs containers as UID 1000
 RUN useradd -m -u 1000 user || true
 WORKDIR /app
 
@@ -13,9 +12,9 @@ RUN mkdir -p /tmp/autoapply && chmod -R 777 /tmp/autoapply /app
 
 USER 1000
 ENV HOME=/home/user \
-    PORT=7860 \
+    PORT=8000 \
     AUTOAPPLY_DATA_DIR=/tmp/autoapply
 
-EXPOSE 7860
+EXPOSE 8000
 
-CMD ["python", "-m", "autoapply", "serve", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["python", "-m", "autoapply", "serve", "--host", "0.0.0.0"]

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: autoapply
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: AUTOAPPLY_DATA_DIR
+        value: /tmp/autoapply

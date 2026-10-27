@@ -305,6 +305,12 @@ class WebApplicationSession:
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-software-rasterizer",
+                "--disable-extensions",
+                "--disable-background-networking",
+                "--no-first-run",
+                "--js-flags=--max-old-space-size=256",
             ]
             try:
                 self._context = await self._pw.chromium.launch_persistent_context(
